@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel Backend</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+    <h2>Search Person</h2>
+    <input type="text" id="nameInput" placeholder="Enter Name">
+    <button id="searchBtn">Search</button>
+    <p id="result"></p>
+
+    <script>
+        document.getElementById("searchBtn").addEventListener("click", searchPerson);
+
+        async function searchPerson() {
+            let name = document.getElementById("nameInput").value.trim().toLowerCase();
+
+            if (!name) {
+                document.getElementById("result").innerText = "Please enter a name!";
+                return;
+            }
+
+            try {
+                let response = await fetch("data.xlsx");
+                if (!response.ok) throw new Error("Failed to load file.");
+
+                let file = await response.blob();
+                let reader = new FileReader();
+
+                reader.onload = function(e) {
+                    let data = new Uint8Array(e.target.result);
+                    let workbook = XLSX.read(data, { type: "array" });
+                    let sheet = workbook.Sheets[workbook.SheetNames[0]];
+                    let jsonData = XLSX.utils.sheet_to_json(sheet);
+
+                    let person = jsonData.find(p => p.Name && p.Name.toLowerCase() === name);
+
+                    document.getElementById("result").innerText = person 
+                        ? `Age: ${person.Age}, Email: ${person.Email}`
+                        : "Person not found!";
+                };
+
+                reader.readAsArrayBuffer(file);
+            } catch (error) {
+                document.getElementById("result").innerText = "Error loading file.";
+                console.error(error);
+            }
+        }
+    </script>
+</body>
+</html>
